@@ -1,2 +1,25 @@
-# emeditor-encoding-change-marco
-Emeditor batch encoding change marco
+# Emeditor 批量转换编码宏
+## 支持下列功能:
+
+### - 批量编码/换行方式转换
+
+### - 转换文档编码
+
+### - 转换文档换行方式 (CR+LF, CR, LF)
+
+
+
+
+
+## 使用说明
+
+### EmEditor 自定义宏中添加 EncodingChange.jsee 文件, 使用即可
+
+
+
+
+
+## 其他
+
+### 原始代码来源于搜索引擎搜索, 批量编码转换功能无法使用, 花时间改了一下, 功能基本正常了
+

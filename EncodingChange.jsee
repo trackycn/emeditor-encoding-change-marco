@@ -1,0 +1,300 @@
+#title=""
+#tooltip="Encoding Change",1033,"编码转换",2052
+#icon="EncodingChange.ico"
+/*=========================================================================*/
+var result = [];
+
+var mainMenu = CreatePopupMenu();
+mainMenu.Add("批量编码转换", 1);
+mainMenu.Add("", 0, eeMenuSeparator);
+mainMenu.Add("当前文档转换为 GB2312", 11);
+mainMenu.Add("当前文档转换为 UTF-8 无签名", 12);
+mainMenu.Add("当前文档转换为 UTF-8 有签名", 13);
+mainMenu.Add("当前文档转换为指定编码", 14);
+mainMenu.Add("当前文档转换为 CR + LF 换行 (Windows)", 15);
+mainMenu.Add("当前文档转换为 CR 换行 (Macintosh)", 16);
+mainMenu.Add("当前文档转换为 LF 换行 (Unix)", 17);
+mainMenu.Add("", 0, eeMenuSeparator);
+mainMenu.Add("所有文档转换为 GB2312", 21);
+mainMenu.Add("所有文档转换为 UTF-8 无签名", 22);
+mainMenu.Add("所有文档转换为 UTF-8 有签名", 23);
+mainMenu.Add("所有文档转换为指定编码", 24);
+mainMenu.Add("所有文档转换为 CR + LF 换行 (Windows)", 25);
+mainMenu.Add("所有文档转换为 CR 换行 (Macintosh)", 26);
+mainMenu.Add("所有文档转换为 LF 换行 (Unix)", 27);
+mainMenu.Add("", 0, eeMenuSeparator);
+mainMenu.Add("编码参考文档", 999);
+
+var witchItem = mainMenu.Track();
+switch (witchItem) {
+  case 1: //指定文件夹下所有文件存为指定编码文件
+    var path = prompt("请输入要处理的文件夹", document.Path);
+    if (!folderExits(path)) {
+      alert("输入的文件夹不存在, 请重新执行!");
+      Quit();
+    }
+    var includeSubFolder = confirm("包括子文件夹?");
+    var extensions = prompt(
+      "文件后缀过滤: (留空表示处理所有文件, 多个后缀以半角竖线符号“|”分隔)",
+      "cs"
+    );
+    var newFileEncoding = prompt(
+      "目标编码: (936: GB2312, 65001: UTF-8)",
+      "65001"
+    );
+    if (isNumeric(newFileEncoding)) {
+      //Bom
+      var unicodeSignature = false;
+      if (
+        newFileEncoding == 65537 ||
+        newFileEncoding == 65538 ||
+        newFileEncoding == 65001
+      ) {
+        unicodeSignature = confirm("是否添加 Unicode 签名 (BOM)?");
+      }
+
+      //换行方式
+      var newlineCode = prompt(
+        "换行方式: (0: 不改变, 1: CrLf, 2: Cr, 3: Lf)",
+        "0"
+      );
+      if (isNumeric(newlineCode)) {
+        var allFiles = filesTree(path, includeSubFolder, extensions);
+
+        if (allFiles.length > 0) {
+          //var activeDocument = editor.ActiveDocument;
+          for (var i = 0; i < allFiles.length; i++) {
+            editor.ExecuteCommandByID(4096);
+            editor.OpenFile(allFiles[i]);
+            saveFile(
+              allFiles[i],
+              newFileEncoding,
+              unicodeSignature,
+              parseInt(newlineCode)
+            );
+            document.Close();
+          }
+          //activeDocument.Activate();
+          alert("处理完成, 总计处理 " + allFiles.length + " 个文件!");
+          Quit();
+        }
+        else {
+          alert("未找到需要处理的文件, 请重新执行!");
+          Quit();
+        }
+      } else {
+        alert("换行方式无效, 必须输入数字, 请重新执行!");
+        Quit();
+      }
+    } else {
+      alert("文件编码无效, 必须输入数字, 请重新执行!");
+      Quit();
+    }
+    break;
+  case 11: //当前文档存为 GB2312
+    saveFile(document.FullName, 936, null, null);
+    break;
+  case 12: //当前文档存为 UTF-8 无签名
+    saveFile(document.FullName, 65001, false, null);
+    break;
+  case 13: //当前文档存为 UTF-8 有签名
+    saveFile(document.FullName, 65001, true, null);
+    break;
+  case 14: //当前文档存为指定编码文件
+    var newFileEncoding = prompt(
+      "目标编码: (936: GB2312, 65001: UTF-8)",
+      "65001"
+    );
+    if (isNumeric(newFileEncoding)) {
+      //Bom
+      var unicodeSignature = false;
+      if (
+        newFileEncoding == 65537 ||
+        newFileEncoding == 65538 ||
+        newFileEncoding == 65001
+      ) {
+        unicodeSignature = confirm("是否添加 Unicode 签名 (BOM)?");
+      }
+
+      saveFile(document.FullName, newFileEncoding, unicodeSignature, null);
+    } else {
+      alert("文件编码无效, 必须输入数字, 请重新执行!");
+      Quit();
+    }
+    break;
+  case 15: //当前文档转换为 CR + LF 换行 (Windows)
+    saveFile(document.FullName, 0, null, 1);
+    break;
+  case 16: //当前文档转换为 LF 换行 (Unix)
+    saveFile(document.FullName, 0, null, 2);
+    break;
+  case 17: //当前文档转换为 LF 换行 (Unix)
+    saveFile(document.FullName, 0, null, 3);
+    break;
+  case 21: //所有文档存为 GB2312
+    var documentCount = editor.Documents.Count;
+    var activeDocument = editor.ActiveDocument;
+    for (i = 0; i < documentCount; i++) {
+      editor.ExecuteCommandByID(5376 + i);
+      saveFile(document.FullName, 936, null, null);
+    }
+    activeDocument.Activate();
+    break;
+  case 22: //所有文档存为 UTF-8 无签名
+    var documentCount = editor.Documents.Count;
+    var activeDocument = editor.ActiveDocument;
+    for (i = 0; i < documentCount; i++) {
+      editor.ExecuteCommandByID(5376 + i);
+      saveFile(document.FullName, 65001, false, null);
+    }
+    activeDocument.Activate();
+    break;
+  case 23: //所有文档存为 UTF-8 有签名
+    var documentCount = editor.Documents.Count;
+    var activeDocument = editor.ActiveDocument;
+    for (i = 0; i < documentCount; i++) {
+      editor.ExecuteCommandByID(5376 + i);
+      saveFile(document.FullName, 65001, true, null);
+    }
+    activeDocument.Activate();
+    break;
+  case 24: //所有文档存为指定编码文件
+    var newFileEncoding = prompt(
+      "目标编码: (936: GB2312, 65001: UTF-8)",
+      "65001"
+    );
+    if (isNumeric(newFileEncoding)) {
+      //Bom
+      var unicodeSignature = false;
+      if (
+        newFileEncoding == 65537 ||
+        newFileEncoding == 65538 ||
+        newFileEncoding == 65001
+      ) {
+        unicodeSignature = confirm("是否添加 Unicode 签名 (BOM)?");
+      }
+
+      saveFile(document.FullName, newFileEncoding, unicodeSignature, null);
+
+      var documentCount = editor.Documents.Count;
+      var activeDocument = editor.ActiveDocument;
+      for (i = 0; i < documentCount; i++) {
+        editor.ExecuteCommandByID(5376 + i);
+        saveFile(document.FullName, newFileEncoding, unicodeSignature, null);
+      }
+      activeDocument.Activate();
+    } else {
+      alert("文件编码无效, 必须输入数字, 请重新执行!");
+      Quit();
+    }
+    break;
+  case 25: //所有文档转换为 CR + LF 换行 (Windows)
+    var documentCount = editor.Documents.Count;
+    var activeDocument = editor.ActiveDocument;
+    for (i = 0; i < documentCount; i++) {
+      editor.ExecuteCommandByID(5376 + i);
+      saveFile(document.FullName, 0, null, 1);
+    }
+    activeDocument.Activate();
+    break;
+  case 26: //所有文档转换为 CR 换行 (Macintosh)
+    var documentCount = editor.Documents.Count;
+    var activeDocument = editor.ActiveDocument;
+    for (i = 0; i < documentCount; i++) {
+      editor.ExecuteCommandByID(5376 + i);
+      saveFile(document.FullName, 0, null, 2);
+    }
+    activeDocument.Activate();
+    break;
+  case 27: //所有文档转换为 LF 换行 (Unix)
+    var documentCount = editor.Documents.Count;
+    var activeDocument = editor.ActiveDocument;
+    for (i = 0; i < documentCount; i++) {
+      editor.ExecuteCommandByID(5376 + i);
+      saveFile(document.FullName, 0, null, 3);
+    }
+    activeDocument.Activate();
+    break;
+  case 999: //编码参考文档
+    var wsShell = new ActiveXObject("WScript.Shell");
+    wsShell.Run(
+      "https://www.emeditor.org/zh-cn/macro_const_const_encoding.html"
+    );
+    break;
+}
+
+function saveFile(fileName, encoding, unicodeSignature, newlineCode) {
+  //修改编码
+  if (!!encoding && encoding > 0) {
+    document.Encoding = encoding;
+  }
+
+  //Bom
+  if (!!unicodeSignature) {
+    document.UnicodeSignature = unicodeSignature;
+  }
+
+  //换行方式
+  if (!!newlineCode && newlineCode > 0) {
+    //https://www.emeditor.org/zh-cn/cmd_file_save_as_crlf.html
+    //保存换行为 CR+LF 命令
+    switch (newlineCode) {
+      case 1:
+        editor.ExecuteCommandByID(4105);
+        break;
+      case 2:
+        editor.ExecuteCommandByID(4106);
+        break;
+      case 3:
+        editor.ExecuteCommandByID(4107);
+        break;
+    }
+  }
+
+  document.Save(fileName);
+}
+
+function folderExits(folder) {
+  var fso = new ActiveXObject("Scripting.FileSystemObject");
+  if (fso.FolderExists(folder)) {
+    return true;
+  } else {
+    return false;
+  }
+}
+
+function filesTree(folderPath, includeSubFolder, filter) {
+  var fso, f, fc;
+  var fileName, filePath;
+  var regExp;
+
+  fso = new ActiveXObject("Scripting.FileSystemObject");
+  f = fso.GetFolder(folderPath);
+  fc = new Enumerator(f.files);
+  for (; !fc.atEnd(); fc.moveNext()) {
+    fileName = fso.GetFileName(fc.item());
+    regExp = new RegExp("^(.*).(" + filter + ")$", "im");
+    if (!filter || regExp.test(fileName)) {
+      filePath = folderPath + "\\" + fileName;
+      result.push(filePath);
+    }
+  }
+
+  if (includeSubFolder) {
+    var Collection = new Enumerator(f.SubFolders);
+    for (Collection.moveFirst(); !Collection.atEnd(); Collection.moveNext()) {
+      var Obj = Collection.item();
+      filesTree(Obj.Path, includeSubFolder, filter);
+    }
+  }
+
+  return result;
+}
+
+function isNumeric(str) {
+  if (typeof str != "string") return false; // we only process strings!
+  return (
+    !isNaN(str) && // use type coercion to parse the _entirety_ of the string (`parseFloat` alone does not do this)...
+    !isNaN(parseFloat(str))
+  ); // ...and ensure strings of whitespace fail
+}
