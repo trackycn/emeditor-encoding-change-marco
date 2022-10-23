@@ -224,6 +224,11 @@ switch (witchItem) {
 }
 
 function saveFile(fileName, encoding, unicodeSignature, newlineCode) {
+  if (document.Untitled) {
+    alert("文件 \"" + fileName + "\" 未保存, 请先保存文件再执行该操作!");
+    return;
+  }
+
   //修改编码
   if (!!encoding && encoding > 0) {
     document.Encoding = encoding;
@@ -249,6 +254,23 @@ function saveFile(fileName, encoding, unicodeSignature, newlineCode) {
         editor.ExecuteCommandByID(4107);
         break;
     }
+
+    // var lineReturn = "";
+    // switch (newlineCode) {
+    //   case 1:
+    //     lineReturn = "\\r\\n";
+    //     break;
+    //   case 2:
+    //     lineReturn = "\\r";
+    //     break;
+    //   case 3:
+    //     lineReturn = "\\n";
+    //     break;
+    // }
+
+    // if (lineReturn.length > 0) {
+    //   document.selection.Replace("\\r\\n|\\r|\\n", lineReturn, eeReplaceAll | eeFindReplaceRegExp | eeExFindSeparateCRLF, 0);
+    // }
   }
 
   document.Save(fileName);
